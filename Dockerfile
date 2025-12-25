@@ -60,7 +60,74 @@ COPY . .
 RUN npx next build
 
 # ============================================================================
-# The builder stage is complete. The .next/standalone directory now contains
-# the standalone output with a minimal server.js file.
-# Next stage: Runner stage (to be implemented)
+# RUNTIME STAGE
 # ============================================================================
+# This is the final production image with minimal footprint.
+# It copies only the necessary artifacts from previous stages.
+# ============================================================================
+
+FROM node:18-alpine AS runtime
+
+# Set runtime arguments
+ARG NODE_ENV=production
+ARG PORT=3000
+
+# Set environment variables
+# NODE_ENV: production mode
+# NEXT_TELEMETRY_DISABLED: disable Next.js telemetry
+# PORT: configurable port for Dokku compatibility
+# HOSTNAME: bind to all interfaces
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=${PORT} \
+    HOSTNAME="0.0.0.0"
+
+# Install runtime dependencies
+# - git: required for GitHub content operations
+# - dumb-init: proper signal handling for PID 1
+# - wget: for health checks
+RUN apk add --no-cache \
+    git \
+    dumb-init \
+    wget
+
+# Create non-root user for security
+# UID/GID 1001 matches standard practice
+RUN addgroup -g 1001 -S pagescms && \
+    adduser -S pagescms -u 1001 && \
+    mkdir -p /app/content /app/media && \
+    chown -R pagescms:pagescms /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy production dependencies from dependencies stage
+COPY --from=dependencies --chown=pagescms:pagescms /app/node_modules ./node_modules
+
+# Copy Next.js standalone output from builder stage
+# The standalone output contains a minimal server.js and necessary files
+COPY --from=builder --chown=pagescms:pagescms /app/.next/standalone ./
+COPY --from=builder --chown=pagescms:pagescms /app/.next/static ./.next/static
+COPY --from=builder --chown=pagescms:pagescms /app/public ./public
+
+# Copy database configuration and scripts
+COPY --chown=pagescms:pagescms db ./db
+
+# Switch to non-root user for security
+USER pagescms
+
+# Expose port (for documentation; overridden by Dokku PORT env var)
+EXPOSE 3000
+
+# Health check (Dokku-compatible)
+# Uses PORT environment variable for flexibility
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/api/health || exit 1
+
+# Use dumb-init to handle signals properly
+# This ensures graceful shutdown when receiving SIGTERM
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start Next.js server
+# The standalone output includes a minimal server.js file
+CMD ["node", "server.js"]
