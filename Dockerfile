@@ -1,4 +1,36 @@
 # ============================================================================
+# DEPENDENCIES STAGE
+# ============================================================================
+# This stage creates a base layer with only production dependencies.
+# It's optimized for Docker layer caching - dependencies are only rebuilt
+# when package*.json changes, not when source code changes.
+# ============================================================================
+
+FROM node:18-alpine AS dependencies
+
+# Set working directory
+WORKDIR /app
+
+# Install runtime dependencies
+# - git: required for content operations in PagesCMS
+# - dumb-init: proper signal handling for PID 1
+RUN apk add --no-cache git dumb-init
+
+# Configure npm for optimal caching
+# Creates a dedicated cache directory for better layer caching
+RUN npm config set cache /tmp/.npm --global
+
+# Copy package files
+# Copy these before source to leverage Docker layer caching
+COPY package*.json ./
+
+# Install only production dependencies
+# npm ci --only=production ensures reproducible, production-only builds
+# --ignore-scripts skips postinstall hooks that may require dev tools
+RUN npm ci --only=production --ignore-scripts && \
+    npm cache clean --force
+
+# ============================================================================
 # BUILDER STAGE
 # ============================================================================
 # This stage builds the Next.js application with all dependencies including
