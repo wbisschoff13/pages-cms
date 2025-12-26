@@ -38,6 +38,19 @@ export async function GET(request: Request): Promise<Response> {
 			}
 		});
 		const githubUser: GitHubUser = await githubUserResponse.json();
+
+    // Check if user is allowed to sign in (if allowlist is configured)
+    const allowedUsers = process.env.GITHUB_ALLOWED_USERS;
+    if (allowedUsers && allowedUsers.trim().length > 0) {
+      const allowedList = allowedUsers.split(',').map(u => u.trim().toLowerCase());
+      if (!allowedList.includes(githubUser.login.toLowerCase())) {
+        return new Response(
+          `Access denied: Your GitHub account (@${githubUser.login}) is not authorized to access this PagesCMS instance. ` +
+          `Please contact the administrator.`,
+          { status: 403 }
+        );
+      }
+    }
     
     const { ciphertext, iv } = await encrypt(token.accessToken);
 
