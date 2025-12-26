@@ -114,6 +114,13 @@ COPY --from=builder --chown=pagescms:pagescms /app/public ./public
 # Copy database configuration and scripts
 COPY --chown=pagescms:pagescms db ./db
 
+# Copy drizzle config needed for migrations
+COPY --from=builder --chown=pagescms:pagescms /app/drizzle.config.ts ./drizzle.config.ts
+
+# Copy container entrypoint script
+COPY --chown=pagescms:pagescms docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Switch to non-root user for security
 USER pagescms
 
@@ -129,6 +136,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # This ensures graceful shutdown when receiving SIGTERM
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start Next.js server
-# The standalone output includes a minimal server.js file
-CMD ["node", "server.js"]
+# Start Next.js server via entrypoint script
+# The entrypoint script runs migrations first, then starts the server
+CMD ["/app/docker-entrypoint.sh"]
