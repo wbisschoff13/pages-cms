@@ -57,7 +57,8 @@ COPY . .
 # Build the application
 # Skip postbuild script (db:migrate) since migrations should run at deployment time
 # This creates .next/standalone directory with minimal production bundle
-RUN npx next build
+# Increase Node.js heap size to prevent out-of-memory errors during build
+RUN NODE_OPTIONS="--max-old-space-size=2048" npx next build
 
 # ============================================================================
 # RUNTIME STAGE
