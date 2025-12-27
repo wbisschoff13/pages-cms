@@ -4,7 +4,6 @@ import { useState } from "react";
 import { handleAppInstall } from "@/lib/actions/app";
 import { useUser } from "@/contexts/user-context";
 import { RepoSelect } from "@/components/repo/repo-select";
-import { RepoTemplates } from "@/components/repo/repo-templates";
 import { RepoLatest } from "@/components/repo/repo-latest";
 import { Message } from "@/components/message";
 import { SubmitButton } from "@/components/submit-button";
@@ -27,12 +26,6 @@ export default function Page() {
 							<RepoLatest/>
 							<h2 className="font-semibold text-lg md:text-2xl tracking-tight">Open a project</h2>
 							<RepoSelect onAccountSelect={(account) => setDefaultAccount(account)}/>
-							{user?.githubId &&
-								<>
-									<h2 className="font-semibold text-lg md:text-2xl tracking-tight">Create from a template</h2>
-									<RepoTemplates defaultAccount={defaultAccount}/>
-								</>
-							}
 						</>
 					:	user.githubId
 							? <Message
