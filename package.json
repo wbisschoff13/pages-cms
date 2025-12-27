@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "npm run db:migrate",
+    "postbuild": "if [ -n \"$DATABASE_URL\" ]; then npm run db:migrate; fi",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "npx drizzle-kit generate",
