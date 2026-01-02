@@ -129,8 +129,9 @@ EXPOSE 3000
 
 # Health check (Dokku-compatible)
 # Uses PORT environment variable for flexibility
+# Checks /health endpoint for basic health verification
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/api/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
 # Use dumb-init to handle signals properly
 # This ensures graceful shutdown when receiving SIGTERM

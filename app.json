@@ -1,0 +1,33 @@
+{
+  "scripts": {
+    "dokku": {
+      "predeploy": "npx drizzle-kit migrate"
+    }
+  },
+  "web": {
+    "command": "eval 'exec node server.js'"
+  },
+  "healthchecks": {
+    "web": [
+      {
+        "type": "liveness",
+        "name": "Liveness check",
+        "description": "Verify Next.js is running",
+        "path": "/health/live",
+        "attempts": 3,
+        "wait": 10,
+        "timeout": 5
+      },
+      {
+        "type": "readiness",
+        "name": "Readiness check",
+        "description": "Verify Next.js and database are ready",
+        "path": "/health/ready",
+        "attempts": 3,
+        "wait": 5,
+        "timeout": 5,
+        "initialDelay": 10
+      }
+    ]
+  }
+}
