@@ -1,4 +1,0 @@
-GET /health/ready
-wait 5
-timeout 30
-attempts 3
